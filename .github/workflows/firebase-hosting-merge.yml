@@ -18,3 +18,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_PIDEPRO_FBA1C }}
           channelId: live
           projectId: pidepro-fba1c
+          entryPoint: "./DogHouse"
