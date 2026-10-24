@@ -381,7 +381,7 @@
         // ==========================================
         // ZONA DE CONFIGURACIÓN PARA EL VENDEDOR
         // ==========================================
-        const firebaseConfig = {
+         const firebaseConfig = {
   apiKey: "AIzaSyCdPms-Vbd5yKsvcWsRTUuaZRo0dkqmFdM",
   authDomain: "pidepro-fba1c.firebaseapp.com",
   projectId: "pidepro-fba1c",
@@ -417,8 +417,8 @@
 
         // INIT
         function initApp() {
-            // Cargar Config
-            db.doc(`artifacts/${appId}/public/data/config`).onSnapshot(doc => {
+            // Cargar Config (Ruta corregida a 2 segmentos: Par)
+            db.doc(`negocios/${appId}`).onSnapshot(doc => {
                 if(doc.exists) {
                     config = doc.data();
                     window.currentBCV = config.bcv || window.currentBCV;
@@ -430,20 +430,20 @@
                 } else {
                     // Defaults
                     config = { password: 'admin', bcv: window.currentBCV, businessName: 'Mi Negocio' };
-                    db.doc(`artifacts/${appId}/public/data/config`).set(config);
+                    db.doc(`negocios/${appId}`).set(config);
                 }
             });
 
-            // Cargar Menú
-            db.collection(`artifacts/${appId}/public/data/products`).onSnapshot(snap => {
+            // Cargar Menú (Ruta corregida a 3 segmentos: Impar)
+            db.collection(`negocios/${appId}/products`).onSnapshot(snap => {
                 products = [];
                 snap.forEach(doc => products.push({id: doc.id, ...doc.data()}));
                 renderMenu();
                 renderAdminMenu();
             });
 
-            // Cargar Órdenes (Solo Admin las procesa, pero las suscribimos)
-            db.collection(`artifacts/${appId}/public/data/orders`).orderBy('timestamp', 'desc').onSnapshot(snap => {
+            // Cargar Órdenes
+            db.collection(`negocios/${appId}/orders`).orderBy('timestamp', 'desc').onSnapshot(snap => {
                 window.allOrders = [];
                 snap.forEach(doc => window.allOrders.push({id: doc.id, ...doc.data()}));
                 if(document.getElementById('admin-view').classList.contains('hidden') === false) {
@@ -611,7 +611,7 @@
             }
 
             // Save to DB
-            db.collection(`artifacts/${appId}/public/data/orders`).add({
+            db.collection(`negocios/${appId}/orders`).add({
                 code: orderCode,
                 client: name,
                 cart: cart,
@@ -714,7 +714,7 @@
         }
 
         function markOrderDone(id) {
-            db.doc(`artifacts/${appId}/public/data/orders/${id}`).update({status: 'done'});
+            db.doc(`negocios/${appId}/orders/${id}`).update({status: 'done'});
         }
 
         // -- ADMIN: Menú
@@ -735,7 +735,7 @@
             };
             if(!data.name || isNaN(data.price)) return alert("Nombre y Precio USD requeridos");
 
-            const col = db.collection(`artifacts/${appId}/public/data/products`);
+            const col = db.collection(`negocios/${appId}/products`);
             if(id) col.doc(id).set(data).then(clearProductForm);
             else col.add(data).then(clearProductForm);
         }
@@ -765,7 +765,7 @@
         }
 
         function deleteProduct(id) {
-            if(confirm("¿Borrar producto?")) db.doc(`artifacts/${appId}/public/data/products/${id}`).delete();
+            if(confirm("¿Borrar producto?")) db.doc(`negocios/${appId}/products/${id}`).delete();
         }
 
         function renderAdminMenu() {
@@ -807,7 +807,7 @@
             if(isNaN(usd)) return alert("Ingresa un monto válido");
             if(method !== 'Efectivo' && !ref) return alert("Ingresa la referencia");
 
-            db.collection(`artifacts/${appId}/public/data/local_sales`).add({
+            db.collection(`negocios/${appId}/local_sales`).add({
                 amountUsd: usd,
                 amountBs: (usd * window.currentBCV).toFixed(2),
                 method: method,
@@ -832,11 +832,11 @@
 
             // Load Orders
             let totalUsd = 0;
-            const orders = await db.collection(`artifacts/${appId}/public/data/orders`).where('timestamp', '>=', startTs).get();
+            const orders = await db.collection(`negocios/${appId}/orders`).where('timestamp', '>=', startTs).get();
             orders.forEach(d => totalUsd += d.data().totalUsd);
 
             // Load Local
-            const local = await db.collection(`artifacts/${appId}/public/data/local_sales`).where('timestamp', '>=', startTs).get();
+            const local = await db.collection(`negocios/${appId}/local_sales`).where('timestamp', '>=', startTs).get();
             local.forEach(d => totalUsd += d.data().amountUsd);
 
             document.getElementById('stat-total-usd').innerText = '$' + totalUsd.toFixed(2);
@@ -848,13 +848,13 @@
             let start = new Date(); start.setHours(0,0,0,0);
             let refsHTML = `<h3 class="font-bold mb-2">Pago Móvil de Hoy:</h3><ul class="text-sm space-y-1">`;
             
-            const orders = await db.collection(`artifacts/${appId}/public/data/orders`).where('timestamp', '>=', start.getTime()).get();
+            const orders = await db.collection(`negocios/${appId}/orders`).where('timestamp', '>=', start.getTime()).get();
             orders.forEach(d => {
                 let p = d.data();
                 if(p.paymentMethod === 'pagomovil') refsHTML += `<li>✅ Ref: <b>${p.pmRef}</b> | Bs ${p.totalBs}</li>`;
             });
 
-            const local = await db.collection(`artifacts/${appId}/public/data/local_sales`).where('timestamp', '>=', start.getTime()).get();
+            const local = await db.collection(`negocios/${appId}/local_sales`).where('timestamp', '>=', start.getTime()).get();
             local.forEach(d => {
                 let p = d.data();
                 if(p.method === 'PagoMovil') refsHTML += `<li>✅ Ref: <b>${p.ref}</b> | Bs ${p.amountBs} (Local)</li>`;
@@ -878,7 +878,7 @@
             // Lógica simple de borrado (traer y borrar)
             const collections = ['orders', 'local_sales'];
             for(let c of collections) {
-                const snap = await db.collection(`artifacts/${appId}/public/data/${c}`).where('timestamp', '>=', startTs).get();
+                const snap = await db.collection(`negocios/${appId}/${c}`).where('timestamp', '>=', startTs).get();
                 snap.forEach(doc => doc.ref.delete());
             }
             alert("Historial limpiado.");
@@ -897,7 +897,7 @@
             let usd = cur === 'USD' ? amt : amt / window.currentBCV;
             let bs = cur === 'BS' ? amt : amt * window.currentBCV;
 
-            db.collection(`artifacts/${appId}/public/data/expenses`).add({
+            db.collection(`negocios/${appId}/expenses`).add({
                 desc, type, cur, originalAmt: amt, usdVal: usd, bsVal: bs, timestamp: Date.now()
             }).then(() => {
                 document.getElementById('exp-desc').value = '';
@@ -907,7 +907,7 @@
         }
 
         function loadExpenses() {
-            db.collection(`artifacts/${appId}/public/data/expenses`).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
+            db.collection(`negocios/${appId}/expenses`).orderBy('timestamp', 'desc').limit(10).get().then(snap => {
                 const c = document.getElementById('expenses-list');
                 c.innerHTML = '';
                 snap.forEach(doc => {
@@ -950,14 +950,14 @@
             let rows = '';
 
             // 1. Ingresos
-            const oSnap = await db.collection(`artifacts/${appId}/public/data/orders`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
+            const oSnap = await db.collection(`negocios/${appId}/orders`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
             oSnap.forEach(d => { incUsd += d.data().totalUsd; });
 
-            const lSnap = await db.collection(`artifacts/${appId}/public/data/local_sales`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
+            const lSnap = await db.collection(`negocios/${appId}/local_sales`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
             lSnap.forEach(d => { incUsd += d.data().amountUsd; });
 
             // 2. Egresos
-            const eSnap = await db.collection(`artifacts/${appId}/public/data/expenses`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
+            const eSnap = await db.collection(`negocios/${appId}/expenses`).where('timestamp', '>=', startTs).where('timestamp', '<=', endTs).get();
             eSnap.forEach(d => {
                 let e = d.data();
                 expUsd += e.usdVal;
@@ -1050,7 +1050,7 @@
             config.bankDoc = document.getElementById('set-doc').value;
             config.wpPhone = document.getElementById('set-wp').value;
 
-            db.doc(`artifacts/${appId}/public/data/config`).set(config).then(() => {
+            db.doc(`negocios/${appId}`).set(config).then(() => {
                 alert("Configuración Guardada");
             });
         }
